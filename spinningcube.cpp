@@ -79,7 +79,7 @@ int main() {
 
     "void main() {"
     "  gl_Position = proj_matrix * mv_matrix * v_pos;"
-    "  vs_color = v_pos * 2.0 + vec4(0.4, 0.4, 0.4, 0.0);"
+    "  vs_color = vec4(0.4, 0.4, 0.4, 0.0);"
     "}";
 
   // Fragment Shader

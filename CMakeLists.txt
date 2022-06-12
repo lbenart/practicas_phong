@@ -15,3 +15,5 @@ target_include_directories(spinningcube_withlight PUBLIC $GLEW_INCLUDE_DIR)
 target_link_libraries (gltest PRIVATE GLEW::GLEW glfw GL)
 target_link_libraries (hellotriangle PRIVATE GLEW::GLEW glfw GL)
 target_link_libraries (spinningcube_withlight PRIVATE GLEW::GLEW glfw GL)
+
+set(CMAKE_INCLUDE_CURRENT_DIR ON)

@@ -1,0 +1,5 @@
+gcc -o hello_window hello_window.cpp -lGL -lGLEW -lglfw -lstdc++
+
+g++ -o hello_triangle hello_triangle.cpp glad.c -lGL -lGLEW -lglfw -lstdc++ -ldl
+
+g++ -o texture1 textura.cpp glad.c -lGL -lGLEW -lglfw -lstdc++ -ldl -lstdc++fs

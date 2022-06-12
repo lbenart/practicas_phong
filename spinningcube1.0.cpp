@@ -1,62 +1,9 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-char *textFileRead(const char *fn) {
-
-  FILE *fp;
-  char *content = NULL;
-
-  int count = 0;
-
-  if (fn != NULL) {
-    fp = fopen(fn, "rt");
-
-    if (fp != NULL) {
-
-      fseek(fp, 0, SEEK_END);
-      count = ftell(fp);
-      rewind(fp);
-
-      if (count > 0) {
-        content = (char *) malloc(sizeof(char) * (count+1));
-        count = fread(content, sizeof(char), count,fp);
-        content[count] = '\0';
-      }
-
-      fclose(fp);
-
-    }
-  }
-
-  return content;
-}
-
-int textFileWrite(const char *fn, const char *s) {
-
-  FILE *fp;
-  int status = 0;
-
-  if (fn != NULL) {
-    fp = fopen(fn, "w");
-
-    if (fp != NULL) {
-
-      if (fwrite(s, sizeof(char), strlen(s),fp) == strlen(s))
-        status = 1;
-
-      fclose(fp);
-
-    }
-  }
-
-  return(status);
-}
-
-
-// Copyright (C) 2020 Emilio J. Padrón
+// Copyright (C) 2021 Emilio J. Padrón
 // Released as Free Software under the X11 License
 // https://spdx.org/licenses/X11.html
+//
+// Strongly inspired by spinnycube.cpp in OpenGL Superbible
+// https://github.com/openglsuperbible
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -76,26 +23,11 @@ void processInput(GLFWwindow *window);
 void render(double);
 
 GLuint shader_program = 0; // shader program to set render pipeline
+GLuint shader_program_for_lighting = 0; // shader program to set render pipeline
 GLuint vao = 0; // Vertext Array Object to set input data
-
-// Shader names
-const char *vertexFileName = "spinningcube_withlight_vs.glsl";
-const char *fragmentFileName = "spinningcube_withlight_fs.glsl";
-
-// Camera
-glm::vec3 camera_pos(0.0f, 0.0f, 3.0f);
-
-// Lighting
-glm::vec3 light_pos(1.2f, 1.0f, 2.0f);
-glm::vec3 light_ambient(0.2f, 0.2f, 0.2f);
-glm::vec3 light_diffuse(0.5f, 0.5f, 0.5f);
-glm::vec3 light_specular(1.0f, 1.0f, 1.0f);
-
-// Material
-glm::vec3 material_ambient(1.0f, 0.5f, 0.31f);
-glm::vec3 material_diffuse(1.0f, 0.5f, 0.31f);
-glm::vec3 material_specular(0.5f, 0.5f, 0.5f);
-const GLfloat material_shininess = 32.0f;
+GLuint lightVAO = 0;
+GLint mv_location, proj_location; // Uniforms for transformation matrices
+GLint mv_location_lamp, proj_location_lamp; // Uniforms for transformation matrices
 
 int main() {
   // start GL context and O/S window using the GLFW helper library
@@ -104,10 +36,6 @@ int main() {
     return 1;
   }
 
-  //  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-  //  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-  //  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-  //  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
   GLFWwindow* window = glfwCreateWindow(gl_width, gl_height, "My spinning cube", NULL, NULL);
   if (!window) {
@@ -117,9 +45,6 @@ int main() {
   }
   glfwSetWindowSizeCallback(window, glfw_window_size_callback);
   glfwMakeContextCurrent(window);
-
-  // start GLEW extension handler
-  // glewExperimental = GL_TRUE;
   glewInit();
 
   // get version info
@@ -138,39 +63,74 @@ int main() {
   glDepthFunc(GL_LESS); // set a smaller value as "closer"
 
   // Vertex Shader
-  char* vertex_shader = textFileRead(vertexFileName);
+  const char* vertex_shader =
+    "#version 130\n"
+
+    "in vec4 v_pos;"
+
+    "out vec4 color;"
+
+    "uniform mat4 mv_matrix;"
+    "uniform mat4 proj_matrix;"
+
+    "void main() {"
+    "  gl_Position = proj_matrix * mv_matrix * v_pos;"
+    "  color = vec4(0.4, 0.4, 0.4, 0.0);"
+    "}";
+
+  // Vertex Shader
+  const char* vertex_shader_lamp =
+    "#version 130\n"
+
+    "in vec4 v_pos;"
+
+    "out vec4 color;"
+
+    "uniform mat4 mv_matrix;"
+    "uniform mat4 proj_matrix;"
+
+    "void main() {"
+    "  gl_Position = proj_matrix * mv_matrix * v_pos;"
+    "}";
+
 
   // Fragment Shader
-  char* fragment_shader = textFileRead(fragmentFileName);
+  const char* fragment_shader =
+    "#version 130\n"
+
+    "out vec4 frag_col;"
+
+    "in vec4 color;"
+
+    "void main() {"
+    "  frag_col = color;"
+    "}";
+
+  // Fragment Shader
+  const char* fragment_shader_lamp =
+    "#version 130\n"
+
+    "out vec4 color;"
+
+    "void main() {"
+        "color = vec4(1.0f); // Set all 4 vector values to 1.0f"
+    "}";
+
 
   // Shaders compilation
   GLuint vs = glCreateShader(GL_VERTEX_SHADER);
   glShaderSource(vs, 1, &vertex_shader, NULL);
-  free(vertex_shader);
   glCompileShader(vs);
-
-  int  success;
-  char infoLog[512];
-  glGetShaderiv(vs, GL_COMPILE_STATUS, &success);
-  if (!success) {
-    glGetShaderInfoLog(vs, 512, NULL, infoLog);
-    printf("ERROR: Vertex Shader compilation failed!\n%s\n", infoLog);
-
-    return(1);
-  }
-
   GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
   glShaderSource(fs, 1, &fragment_shader, NULL);
-  free(fragment_shader);
   glCompileShader(fs);
 
-  glGetShaderiv(fs, GL_COMPILE_STATUS, &success);
-  if (!success) {
-    glGetShaderInfoLog(fs, 512, NULL, infoLog);
-    printf("ERROR: Fragment Shader compilation failed!\n%s\n", infoLog);
-
-    return(1);
-  }
+  GLuint vs_lamp = glCreateShader(GL_VERTEX_SHADER);
+  glShaderSource(vs_lamp, 1, &vertex_shader_lamp, NULL);
+  glCompileShader(vs_lamp);
+  GLuint fs_lamp = glCreateShader(GL_VERTEX_SHADER);
+  glShaderSource(fs_lamp, 1, &fragment_shader_lamp, NULL);
+  glCompileShader(fs_lamp);
 
   // Create program, attach shaders to it and link it
   shader_program = glCreateProgram();
@@ -178,15 +138,12 @@ int main() {
   glAttachShader(shader_program, vs);
   glLinkProgram(shader_program);
 
-  glValidateProgram(shader_program);
-  glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
-  if(!success) {
-    glGetProgramInfoLog(shader_program, 512, NULL, infoLog);
-    printf("ERROR: Shader Program linking failed!\n%s\n", infoLog);
+  shader_program_for_lighting = glCreateProgram();
+  glAttachShader(shader_program_for_lighting, fs_lamp);
+  glAttachShader(shader_program_for_lighting, vs_lamp);
+  glLinkProgram(shader_program_for_lighting);
 
-    return(1);
-  }
-
+  
   // Release shader objects
   glDeleteShader(vs);
   glDeleteShader(fs);
@@ -195,6 +152,7 @@ int main() {
   glGenVertexArrays(1, &vao);
   glBindVertexArray(vao);
 
+  
   // Cube to be rendered
   //
   //          0        3
@@ -254,7 +212,7 @@ int main() {
      0.25f,  0.25f, -0.25f  // 3
   };
 
-// Vertex Buffer Object (for vertex coordinates)
+  // Vertex Buffer Object (for vertex coordinates)
   GLuint vbo = 0;
   glGenBuffers(1, &vbo);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
@@ -265,8 +223,6 @@ int main() {
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
   glEnableVertexAttribArray(0);
 
-  // 1: vertex normals (x, y, z)
-
   // Unbind vbo (it was conveniently registered by VertexAttribPointer)
   glBindBuffer(GL_ARRAY_BUFFER, 0);
 
@@ -274,17 +230,16 @@ int main() {
   glBindVertexArray(0);
 
   // Uniforms
-  // - Model matrix
-  // - View matrix
+  // - Model-View matrix
   // - Projection matrix
-  // - Normal matrix: normal vectors from local to world coordinates
-  // - Camera position
-  // - Light data
-  // - Material data
-  
-  // [...]
+  mv_location = glGetUniformLocation(shader_program, "mv_matrix");
+  proj_location = glGetUniformLocation(shader_program, "proj_matrix");
 
-// Render loop
+  
+  mv_location_lamp = glGetUniformLocation(shader_program_for_lighting, "mv_matrix");
+  proj_location_lamp = glGetUniformLocation(shader_program_for_lighting, "proj_matrix");
+
+  // Render loop
   while(!glfwWindowShouldClose(window)) {
 
     processInput(window);
@@ -311,42 +266,50 @@ void render(double currentTime) {
   glUseProgram(shader_program);
   glBindVertexArray(vao);
 
-  glm::mat4 model, view, projection;
-  GLint model_location, view_location, proj_location; // Uniforms for transformation matrices
-  
-  model_location = glGetUniformLocation(shader_program, "model");
-  view_location = glGetUniformLocation(shader_program, "view");
-  proj_location = glGetUniformLocation(shader_program, "projection");
+  glm::mat4 mv_matrix, proj_matrix;
 
-  model = glm::mat4(1.0f);
-  view = glm::lookAt(                 camera_pos,  // pos
-                            glm::vec3(0.0f, 0.0f, 0.0f),  // target
-                            glm::vec3(0.0f, 1.0f, 0.0f)); // up
+  mv_matrix = glm::translate(glm::mat4(1.f), glm::vec3(0.0f, 0.0f, -4.0f));
+  mv_matrix = glm::translate(mv_matrix,
+                             glm::vec3(sinf(2.1f * f) * 0.5f,
+                                       cosf(1.7f * f) * 0.5f,
+                                       sinf(1.3f * f) * cosf(1.5f * f) * 2.0f));
 
-  // Moving cube
-  model = glm::rotate(model,
-                 glm::radians((float)currentTime * 45.0f),
-                 glm::vec3(0.0f, 1.0f, 0.0f));
+  mv_matrix = glm::rotate(mv_matrix,
+                          glm::radians((float)currentTime * 45.0f),
+                          glm::vec3(0.0f, 1.0f, 0.0f));
+  mv_matrix = glm::rotate(mv_matrix,
+                          glm::radians((float)currentTime * 81.0f),
+                          glm::vec3(1.0f, 0.0f, 0.0f));
 
-  // model = glm::rotate(model,
-  //             glm::radians((float)currentTime * 81.0f),
-  //             glm::vec3(1.0f, 0.0f, 0.0f));               
+  glUniformMatrix4fv(mv_location, 1, GL_FALSE, glm::value_ptr(mv_matrix));
 
-  glUniformMatrix4fv(model_location, 1, GL_FALSE, glm::value_ptr(model));
-
-  glUniformMatrix4fv(view_location, 1, GL_FALSE, glm::value_ptr(view));
-
-  // Projection
-  projection = glm::perspective(glm::radians(50.0f),
-                                (float) gl_width / (float) gl_height,
-                                0.1f, 1000.0f);
-  
-  glUniformMatrix4fv(proj_location, 1, GL_FALSE, glm::value_ptr(projection));
-
-  // Normal matrix: normal vectors to world coordinates
-
+  proj_matrix = glm::perspective(glm::radians(50.0f),
+                                 (float) gl_width / (float) gl_height,
+                                 0.1f, 1000.0f);
+  glUniformMatrix4fv(proj_location, 1, GL_FALSE, glm::value_ptr(proj_matrix));
 
   glDrawArrays(GL_TRIANGLES, 0, 36);
+
+
+  glUseProgram(shader_program_for_lighting);
+  glBindVertexArray(vao);
+
+  mv_matrix = glm::translate(glm::mat4(1.f), glm::vec3(0.0f, 0.0f, -8.0f));
+
+  glUniformMatrix4fv(mv_location, 1, GL_FALSE, glm::value_ptr(mv_matrix));
+
+  proj_matrix = glm::perspective(glm::radians(50.0f),
+                                 (float) gl_width / (float) gl_height,
+                                 0.1f, 1000.0f);
+  glUniformMatrix4fv(proj_location, 1, GL_FALSE, glm::value_ptr(proj_matrix));
+
+  glDrawArrays(GL_TRIANGLES, 0, 36);
+
+
+
+
+
+
 }
 
 void processInput(GLFWwindow *window) {

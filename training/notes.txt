@@ -1,0 +1,25 @@
+In OpenGL everything is in 3D space, but the screen or window is a 2D array of pixels so a large part of OpenGL's work is about transforming all 3D coordinates to 2D pixels that fit on your screen. The process of transforming 3D coordinates to 2D pixels is managed by the graphics pipeline of OpenGL. The graphics pipeline can be divided into two large parts: the first transforms your 3D coordinates into 2D coordinates and the second part transforms the 2D coordinates into actual colored pixels.
+
+
+A fragment in OpenGL is all the data required for OpenGL to render a single pixel.
+
+
+The main purpose of the fragment shader is to calculate the final color of a pixel and this is usually the stage where all the advanced OpenGL effects occur. Usually the fragment shader contains data about the 3D scene that it can use to calculate the final pixel color (like lights, shadows, color of the light and so on).
+
+
+The graphics pipeline is quite a complex whole and contains many configurable parts. However, for almost all the cases we only have to work with the vertex and fragment shader.
+
+
+OpenGL is a 3D graphics library so all coordinates that we specify in OpenGL are in 3D (x, y and z coordinate). OpenGL doesn't simply transform all your 3D coordinates to 2D pixels on your screen; OpenGL only processes 3D coordinates when they're in a specific range between -1.0 and 1.0 on all 3 axes (x, y and z). All coordinates within this so called normalized device coordinates range will end up visible on your screen (and all coordinates outside this region won't). 
+
+
+Vertex buffer objects (VBO) that can store a large number of vertices in the GPU's memory.
+
+
+Shaders are little programs that rest on the GPU. These programs are run for each specific section of the graphics pipeline. Programs transforming inputs to outputs.
+
+
+We just managed to send a value from the vertex shader to the fragment shader.
+
+
+Uniforms are another way to pass data from our application on the CPU to the shaders on the GPU. Uniforms are global. 
