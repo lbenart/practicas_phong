@@ -21,11 +21,12 @@ GLuint shader_program = 0; // shader program to set render pipeline
 
 GLuint shader_lamp = 0; 
 
-GLuint vao = 0; // Vertext Array Object to set input data
+GLuint cube_vao = 0; // Vertext Array Object to set input data
 
 GLuint light_vao = 0;
 
 GLint model_location, view_location, proj_location; // Uniforms for transformation matrices
+GLint model_lamp, view_lamp, proj_lamp; // Uniforms for transformation matrices
 
 GLint normal_location, camera_location;
 GLint l_ambient, l_diffuse, l_specular, l_position;
@@ -270,13 +271,13 @@ int main() {
 // Vertex Buffer Object (for vertex coordinates)
   GLuint vbo = 0;
   // Vertex Array Object
-  glGenVertexArrays(1, &vao);
+  glGenVertexArrays(1, &cube_vao);
   glGenBuffers(1, &vbo);
 
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_positions), vertex_positions, GL_STATIC_DRAW);
 
-  glBindVertexArray(vao);
+  glBindVertexArray(cube_vao);
   
   // Vertex attributes
   // 0: vertex position (x, y, z)
@@ -299,10 +300,10 @@ int main() {
   glEnableVertexAttribArray(0);
 
   // Unbind vbo (it was conveniently registered by VertexAttribPointer)
-  // glBindBuffer(GL_ARRAY_BUFFER, 0); LBA
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
 
   // Unbind vao
-  //glBindVertexArray(0); LBA
+  glBindVertexArray(0);
 
   // Uniforms
   // - Model matrix
@@ -312,6 +313,7 @@ int main() {
   // - Camera position
   // - Light data
   // - Material data
+  
   model_location = glGetUniformLocation(shader_program, "model");
   view_location = glGetUniformLocation(shader_program, "view");
   proj_location = glGetUniformLocation(shader_program, "projection");
@@ -379,7 +381,14 @@ void render(double currentTime) {
                             glm::vec3(0.0f, 0.0f, 0.0f),  // target
                             glm::vec3(0.0f, 1.0f, 0.0f)); // up
 
-  // Moving cube
+  
+  // Moving the cube
+  //model_matrix = glm::translate(glm::mat4(1.f), glm::vec3(0.0f, 0.0f, -4.0f));
+  model_matrix = glm::translate(model_matrix,
+                             glm::vec3(sinf(2.1f * f) * 0.5f,
+                                       cosf(1.7f * f) * 0.5f,
+                                       sinf(1.3f * f) * cosf(1.5f * f) * 2.0f));
+
   model_matrix = glm::rotate(model_matrix,
                               glm::radians((float)currentTime * 45.0f),
                               glm::vec3(0.0f, 1.0f, 0.0f));
@@ -391,31 +400,33 @@ void render(double currentTime) {
   glUniformMatrix4fv(model_location, 1, GL_FALSE, glm::value_ptr(model_matrix));
   glUniformMatrix4fv(view_location, 1, GL_FALSE, glm::value_ptr(view_matrix));  
 
+  //Normal matrix: normal vectors to world coordinates
+  normal_matrix = glm::transpose(glm::inverse(glm::mat3(model_matrix)));
+  glUniformMatrix3fv(normal_location, 1, GL_FALSE, glm::value_ptr(normal_matrix));
+
   // Projection
   proj_matrix = glm::perspective(glm::radians(50.0f),
                                  (float) gl_width / (float) gl_height,
                                  0.1f, 1000.0f);
   glUniformMatrix4fv(proj_location, 1, GL_FALSE, glm::value_ptr(proj_matrix));
 
-  // Normal matrix: normal vectors to world coordinates
-  normal_matrix = glm::transpose(glm::inverse(glm::mat3(model_matrix)));
-  glUniformMatrix4fv(normal_location, 1, GL_FALSE, glm::value_ptr(normal_matrix));
   
-  glBindVertexArray(vao);
+  glBindVertexArray(cube_vao);
   glDrawArrays(GL_TRIANGLES, 0, 36);
 
 
-  // also draw the lamp object
-  model_location = glGetUniformLocation(shader_lamp, "model");
-  view_location = glGetUniformLocation(shader_lamp, "view");
-  proj_location = glGetUniformLocation(shader_lamp, "projection");
+
+  // Draw the lamp object
+  model_lamp = glGetUniformLocation(shader_lamp, "model");
+  view_lamp = glGetUniformLocation(shader_lamp, "view");
+  proj_lamp = glGetUniformLocation(shader_lamp, "projection");
   glUseProgram(shader_lamp);
-  glUniformMatrix4fv(proj_location, 1, GL_FALSE, glm::value_ptr(proj_matrix));
-  glUniformMatrix4fv(view_location, 1, GL_FALSE, glm::value_ptr(view_matrix));  
+  glUniformMatrix4fv(proj_lamp, 1, GL_FALSE, glm::value_ptr(proj_matrix));
+  glUniformMatrix4fv(view_lamp, 1, GL_FALSE, glm::value_ptr(view_matrix));  
   model_matrix = glm::mat4(1.0f);
   model_matrix = glm::translate(model_matrix, light_pos);
-  model_matrix = glm::scale(model_matrix, glm::vec3(0.2f)); // a smaller cube
-  glUniformMatrix4fv(model_location, 1, GL_FALSE, glm::value_ptr(model_matrix));
+  model_matrix = glm::scale(model_matrix, glm::vec3(0.2f));
+  glUniformMatrix4fv(model_lamp, 1, GL_FALSE, glm::value_ptr(model_matrix));
 
   glBindVertexArray(light_vao);
   glDrawArrays(GL_TRIANGLES, 0, 36);
