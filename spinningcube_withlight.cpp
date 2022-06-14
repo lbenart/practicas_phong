@@ -1,59 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-char *textFileRead(const char *fn) {
-
-  FILE *fp;
-  char *content = NULL;
-
-  int count = 0;
-
-  if (fn != NULL) {
-    fp = fopen(fn, "rt");
-
-    if (fp != NULL) {
-
-      fseek(fp, 0, SEEK_END);
-      count = ftell(fp);
-      rewind(fp);
-
-      if (count > 0) {
-        content = (char *) malloc(sizeof(char) * (count+1));
-        count = fread(content, sizeof(char), count,fp);
-        content[count] = '\0';
-      }
-
-      fclose(fp);
-
-    }
-  }
-
-  return content;
-}
-
-int textFileWrite(const char *fn, const char *s) {
-
-  FILE *fp;
-  int status = 0;
-
-  if (fn != NULL) {
-    fp = fopen(fn, "w");
-
-    if (fp != NULL) {
-
-      if (fwrite(s, sizeof(char), strlen(s),fp) == strlen(s))
-        status = 1;
-
-      fclose(fp);
-
-    }
-  }
-
-  return(status);
-}
-
-
 // Copyright (C) 2020 Emilio J. Padrón
 // Released as Free Software under the X11 License
 // https://spdx.org/licenses/X11.html
@@ -68,6 +12,8 @@ int textFileWrite(const char *fn, const char *s) {
 #include <glm/gtc/matrix_transform.hpp> // glm::translate, glm::rotate, glm::perspective
 #include <glm/gtc/type_ptr.hpp>
 
+#include "textfile_ALT.h"
+
 int gl_width = 640;
 int gl_height = 480;
 
@@ -80,8 +26,8 @@ GLuint vao = 0; // Vertext Array Object to set input data
 GLint model_location, view_location, proj_location; // Uniforms for transformation matrices
 
 // Shader names
-const char *vertexFileName = "spinningcube_withlight_vs.glsl";
-const char *fragmentFileName = "spinningcube_withlight_fs.glsl";
+const char *vertexFileName = "spinningcube_withlight_vs_SKEL.glsl";
+const char *fragmentFileName = "spinningcube_withlight_fs_SKEL.glsl";
 
 // Camera
 glm::vec3 camera_pos(0.0f, 0.0f, 3.0f);
