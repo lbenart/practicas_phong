@@ -42,6 +42,7 @@ GLint l_ambient, l_diffuse, l_specular, l_position;
 GLint m_ambient, m_diffuse, m_specular, m_shininess;
 
 unsigned int diffuseMap;
+unsigned int specularMap;
 
 // Shader filenames for cube
 const char *vertexFileName = "skel_vs.glsl";
@@ -353,10 +354,11 @@ int main() {
   proj_lamp = glGetUniformLocation(shader_lamp, "projection");
 
   glUseProgram(shader_program);
-  glUniform1i(m_diffuse, 0); //LBA
+  glUniform1i(m_diffuse, 0);
+  glUniform1i(m_specular, 1);
 
-  //diffuseMap = loadTexture(fs::path("resources/texture.jpg").c_str());
-  diffuseMap = loadTexture(fs::path("resources/container.png").c_str());
+  diffuseMap = loadTexture(fs::path("resources/diffuse.png").c_str());
+  specularMap = loadTexture(fs::path("resources/specular.png").c_str());
 
 // Render loop
   while(!glfwWindowShouldClose(window)) {
@@ -394,9 +396,6 @@ void render(double currentTime) {
   glUniform3fv(l_specular, 1, &light_specular[0]);
 
   // material properties
-  //glUniform3fv(m_ambient, 1, &material_ambient[0]);
-  //glUniform3fv(m_diffuse, 1, &material_diffuse[0]); //LBA
-  glUniform3fv(m_specular, 1, &material_specular[0]);
   glUniform1f(m_shininess, material_shininess);
 
   glm::mat4 model_matrix, view_matrix, proj_matrix;
@@ -439,6 +438,9 @@ void render(double currentTime) {
   // bind diffuse map
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, diffuseMap);
+  // bind specular map
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D, specularMap);
   
   glBindVertexArray(cube_vao);
   glDrawArrays(GL_TRIANGLES, 0, 36);
