@@ -2,7 +2,7 @@ todo: skel
 
 LDLIBS=-lGL -lGLEW -lglfw -lm 
 
-skel: textfile.o 
+skel: textfile.o
 
 clean:
 	rm -f *.o *~
