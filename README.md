@@ -7,6 +7,9 @@ Está organizado de la siguiente forma:
 * Rama <b>feature/lighting</b>.
 Contiene los archivos para dar respuesta a la primera parte de esta tarea: con una sola fuente de luz y un cubo con un único material homogéneo aplicar Phong shading básico.
 
+* Rama <b>feature/secondCube</b>.
+Contiene los archivos para dar respuesta a la segunda parte de esta tarea: añadir un segundo cubo rotando, más pequeño, y un segundo punto de luz. (Esta funcionalidad fue la última que se desarrolló por eso los cubos en este punto ya cuentan con mapa difuso y mapa especular.)
+
 * Rama <b>feature/diffuse</b>.
 Contiene los archivos para dar respuesta a la tercera parte de esta tarea: añadir un mapa difuso al cubo para el cálculo de Phong.
 
