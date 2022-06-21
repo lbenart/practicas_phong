@@ -37,14 +37,10 @@ GLint model_location, view_location, proj_location; // Uniforms for transformati
 GLint model_lamp, view_lamp, proj_lamp; // Uniforms for transformation matrices
 
 GLint normal_location, camera_location;
-GLint l_ambient, l_diffuse, l_specular, l_position;
+GLint l_ambient, l_diffuse, l_specular, l_position, l_constant, l_linear, l_quadratic;
+GLint l2_ambient, l2_diffuse, l2_specular, l2_position, l2_constant, l2_linear, l2_quadratic;
 
 GLint m_ambient, m_diffuse, m_specular, m_shininess;
-
-glm::vec3 cubePositions[] = {
-  glm::vec3(0.0f,  0.0f,  0.0f),
-  glm::vec3(2.0f,  -0.4f,  0.0f)
-};
 
 unsigned int diffuseMap;
 unsigned int specularMap;
@@ -57,19 +53,38 @@ const char *fragmentFileName = "skel_fs.glsl";
 const char *vertexFileNameLamp = "lamp_vs.glsl";
 const char *fragmentFileNameLamp = "lamp_fs.glsl";
 
+// Cube positions
+glm::vec3 cubePositions[] = {
+  glm::vec3(0.0f,  0.0f,  0.0f),
+  glm::vec3(2.0f,  -0.4f,  0.0f)
+};
+
 // Camera
 glm::vec3 camera_pos(0.0f, 0.0f, 3.0f);
 
-// Lighting
-glm::vec3 lightsPosition[] = {
+// Point Light Positions
+glm::vec3 lightPositions[] = {
   glm::vec3(0.5f, 0.5f, 0.5f),
-  glm::vec3(1.0f,  -0.4f,  0.0f)
+  glm::vec3(2.3f, -1.3f, -1.0f)
 };
 
-glm::vec3 light_pos(0.5f, 0.5f, 0.5f);
+// Light number ONE
+glm::vec3 light_pos(lightPositions[0]);
 glm::vec3 light_ambient(0.2f, 0.2f, 0.2f);
 glm::vec3 light_diffuse(0.5f, 0.5f, 0.5f);
 glm::vec3 light_specular(1.0f, 1.0f, 1.0f);
+const GLfloat light_constant = 1.0f;
+const GLfloat light_linear = 0.09f;
+const GLfloat light_quadratic = 0.032f;
+
+// Light number TWO
+glm::vec3 light2_pos(lightPositions[1]);
+glm::vec3 light2_ambient(0.05f, 0.05f, 0.05f);
+glm::vec3 light2_diffuse(0.8f, 0.8f, 0.8f);
+glm::vec3 light2_specular(1.0f, 1.0f, 1.0f);
+const GLfloat light2_constant = 1.0f;
+const GLfloat light2_linear = 0.09f;
+const GLfloat light2_quadratic = 0.032f;
 
 // Material
 glm::vec3 material_ambient(1.0f, 0.5f, 0.31f);
@@ -347,12 +362,25 @@ int main() {
 
   camera_location = glGetUniformLocation(shader_program, "view_pos");
 
-  l_position  = glGetUniformLocation(shader_program,"light.position");  
-  l_ambient = glGetUniformLocation(shader_program, "light.ambient");
-  l_diffuse  = glGetUniformLocation(shader_program,"light.diffuse");
-  l_specular = glGetUniformLocation(shader_program,"light.specular");
+  //light1
+  l_position  = glGetUniformLocation(shader_program,"lights[0].position");  
+  l_ambient = glGetUniformLocation(shader_program, "lights[0].ambient");
+  l_diffuse  = glGetUniformLocation(shader_program,"lights[0].diffuse");
+  l_specular = glGetUniformLocation(shader_program,"lights[0].specular");
+  l_constant = glGetUniformLocation(shader_program, "lights[0].constant");
+  l_linear  = glGetUniformLocation(shader_program,"lights[0].linear");
+  l_quadratic = glGetUniformLocation(shader_program,"lights[0].quadratic");
 
-  //m_ambient = glGetUniformLocation(shader_program, "material.ambient");
+  //light2
+  l2_position  = glGetUniformLocation(shader_program,"lights[1].position");  
+  l2_ambient = glGetUniformLocation(shader_program, "lights[1].ambient");
+  l2_diffuse  = glGetUniformLocation(shader_program,"lights[1].diffuse");
+  l2_specular = glGetUniformLocation(shader_program,"lights[1].specular");
+  l2_constant = glGetUniformLocation(shader_program, "lights[1].constant");
+  l2_linear  = glGetUniformLocation(shader_program,"lights[1].linear");
+  l2_quadratic = glGetUniformLocation(shader_program,"lights[1].quadratic");
+
+  //material
   m_diffuse  = glGetUniformLocation(shader_program,"material.diffuse");
   m_specular  = glGetUniformLocation(shader_program,"material.specular");  
   m_shininess = glGetUniformLocation(shader_program,"material.shininess");
@@ -397,11 +425,23 @@ void render(double currentTime) {
   //camera position
   glUniform3fv(camera_location, 1, &camera_pos[0]);
 
-  // light properties
+  // light ONE properties
   glUniform3fv(l_position, 1, &light_pos[0]);
   glUniform3fv(l_ambient, 1, &light_ambient[0]);
   glUniform3fv(l_diffuse, 1, &light_diffuse[0]);
   glUniform3fv(l_specular, 1, &light_specular[0]);
+  glUniform1f(l_constant, light_constant);
+  glUniform1f(l_linear, light_linear);
+  glUniform1f(l_quadratic, light_quadratic);
+
+  // light ONE properties
+  glUniform3fv(l2_position, 1, &light2_pos[0]);
+  glUniform3fv(l2_ambient, 1, &light2_ambient[0]);
+  glUniform3fv(l2_diffuse, 1, &light2_diffuse[0]);
+  glUniform3fv(l2_specular, 1, &light2_specular[0]);
+  glUniform1f(l2_constant, light2_constant);
+  glUniform1f(l2_linear, light2_linear);
+  glUniform1f(l2_quadratic, light2_quadratic);
 
   // material properties
   glUniform1f(m_shininess, material_shininess);
@@ -461,14 +501,17 @@ void render(double currentTime) {
   // Draw the lamp object
   glUseProgram(shader_lamp);
   glUniformMatrix4fv(proj_lamp, 1, GL_FALSE, glm::value_ptr(proj_matrix));
-  glUniformMatrix4fv(view_lamp, 1, GL_FALSE, glm::value_ptr(view_matrix));  
-  model_matrix = glm::mat4(1.0f);
-  model_matrix = glm::translate(model_matrix, light_pos);
-  model_matrix = glm::scale(model_matrix, glm::vec3(0.2f));
-  glUniformMatrix4fv(model_lamp, 1, GL_FALSE, glm::value_ptr(model_matrix));
+  glUniformMatrix4fv(view_lamp, 1, GL_FALSE, glm::value_ptr(view_matrix));
 
-  glBindVertexArray(light_vao);
-  glDrawArrays(GL_TRIANGLES, 0, 36);
+  for (unsigned int i = 0; i < 2; i++){
+    model_matrix = glm::mat4(1.0f);
+    model_matrix = glm::translate(model_matrix, lightPositions[i]);
+    model_matrix = glm::scale(model_matrix, glm::vec3(0.2f));
+    glUniformMatrix4fv(model_lamp, 1, GL_FALSE, glm::value_ptr(model_matrix));
+
+    glBindVertexArray(light_vao);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+  }
 
 }
 
