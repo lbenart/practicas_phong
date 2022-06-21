@@ -18,8 +18,10 @@ Contiene los archivos para dar respuesta a la cuarta parte de esta tarea: añadi
 
 * Rama <b>main</b>. Contiene un merge desde la rama feature/specular que es la más adelantada.
 
-
 En cada rama hay una carpeta que contiene capturas con los ejemplos de renders obtenidos para cada caso.
+
+## Bibliografía
+Para resolver las tareas se utilizaron como base los ejemplos y las notas brindadas en los apuntes de la asignatura, así como el curso Learn OpenGL disponible en el siguiente enlace: https://learnopengl.com/.
 
 ## Compilación
 
