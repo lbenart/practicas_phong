@@ -41,6 +41,11 @@ GLint l_ambient, l_diffuse, l_specular, l_position;
 
 GLint m_ambient, m_diffuse, m_specular, m_shininess;
 
+glm::vec3 cubePositions[] = {
+  glm::vec3(0.0f,  0.0f,  0.0f),
+  glm::vec3(2.0f,  -0.4f,  0.0f)
+};
+
 unsigned int diffuseMap;
 unsigned int specularMap;
 
@@ -56,7 +61,10 @@ const char *fragmentFileNameLamp = "lamp_fs.glsl";
 glm::vec3 camera_pos(0.0f, 0.0f, 3.0f);
 
 // Lighting
-//glm::vec3 light_pos(1.2f, 1.0f, 2.0f);
+glm::vec3 lightsPosition[] = {
+  glm::vec3(0.5f, 0.5f, 0.5f),
+  glm::vec3(1.0f,  -0.4f,  0.0f)
+};
 
 glm::vec3 light_pos(0.5f, 0.5f, 0.5f);
 glm::vec3 light_ambient(0.2f, 0.2f, 0.2f);
@@ -401,51 +409,54 @@ void render(double currentTime) {
   glm::mat4 model_matrix, view_matrix, proj_matrix;
   glm::mat3 normal_matrix;
 
-  model_matrix = glm::mat4(1.f);
-  view_matrix = glm::lookAt(                 camera_pos,  // pos
-                            glm::vec3(0.0f, 0.0f, 0.0f),  // target
-                            glm::vec3(0.0f, 1.0f, 0.0f)); // up
 
-  
-  // Moving the cube
-  //model_matrix = glm::translate(glm::mat4(1.f), glm::vec3(0.0f, 0.0f, -4.0f));
-  model_matrix = glm::translate(model_matrix,
-                             glm::vec3(sinf(2.1f * f) * 0.5f,
-                                       cosf(1.7f * f) * 0.5f,
-                                       sinf(1.3f * f) * cosf(1.5f * f) * 2.0f));
+  for (unsigned int i = 1; i < 3; i++){
+    // calculate the model matrix for each object and pass it to shader before drawing
+    model_matrix = glm::mat4(1.f);
+    view_matrix = glm::lookAt(                 camera_pos,  // pos
+                              glm::vec3(0.0f, 0.0f, 0.0f),  // target
+                              glm::vec3(0.0f, 1.0f, 0.0f)); // up
 
-  model_matrix = glm::rotate(model_matrix,
-                              glm::radians((float)currentTime * 45.0f),
-                              glm::vec3(0.0f, 1.0f, 0.0f));
-  
-  model_matrix = glm::rotate(model_matrix,
-                          glm::radians((float)currentTime * 81.0f),
-                          glm::vec3(1.0f, 0.0f, 0.0f));
-  
-  glUniformMatrix4fv(model_location, 1, GL_FALSE, glm::value_ptr(model_matrix));
-  glUniformMatrix4fv(view_location, 1, GL_FALSE, glm::value_ptr(view_matrix));  
+    // Moving the cube
+    model_matrix = glm::translate(glm::mat4(1.f), cubePositions[i-1]);
+    model_matrix = glm::translate(model_matrix,
+                              glm::vec3(sinf(2.1f * f) * 0.5f *i,
+                                        cosf(1.7f * f) * 0.5f *i,
+                                        sinf(1.3f * f) * cosf(1.5f * f) * 2.0f));
 
-  //Normal matrix: normal vectors to world coordinates
-  normal_matrix = glm::transpose(glm::inverse(glm::mat3(model_matrix)));
-  glUniformMatrix3fv(normal_location, 1, GL_FALSE, glm::value_ptr(normal_matrix));
+    model_matrix = glm::scale(model_matrix, glm::vec3(0.5f*i));
 
-  // Projection
-  proj_matrix = glm::perspective(glm::radians(50.0f),
-                                 (float) gl_width / (float) gl_height,
-                                 0.1f, 1000.0f);
-  glUniformMatrix4fv(proj_location, 1, GL_FALSE, glm::value_ptr(proj_matrix));
+    model_matrix = glm::rotate(model_matrix,
+                                glm::radians((float)currentTime * 45.0f *i),
+                                glm::vec3(0.0f, 1.0f, 0.0f));
+    
+    model_matrix = glm::rotate(model_matrix,
+                            glm::radians((float)currentTime * 81.0f),
+                            glm::vec3(1.0f, 0.0f, 0.0f));
+    
+    glUniformMatrix4fv(model_location, 1, GL_FALSE, glm::value_ptr(model_matrix));
+    glUniformMatrix4fv(view_location, 1, GL_FALSE, glm::value_ptr(view_matrix));  
 
-  // bind diffuse map
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, diffuseMap);
-  // bind specular map
-  glActiveTexture(GL_TEXTURE1);
-  glBindTexture(GL_TEXTURE_2D, specularMap);
-  
-  glBindVertexArray(cube_vao);
-  glDrawArrays(GL_TRIANGLES, 0, 36);
+    //Normal matrix: normal vectors to world coordinates
+    normal_matrix = glm::transpose(glm::inverse(glm::mat3(model_matrix)));
+    glUniformMatrix3fv(normal_location, 1, GL_FALSE, glm::value_ptr(normal_matrix));
 
+    // Projection
+    proj_matrix = glm::perspective(glm::radians(50.0f),
+                                  (float) gl_width / (float) gl_height,
+                                  0.1f, 1000.0f);
+    glUniformMatrix4fv(proj_location, 1, GL_FALSE, glm::value_ptr(proj_matrix));
 
+    // bind diffuse map
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, diffuseMap);
+    // bind specular map
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, specularMap);
+    
+    glBindVertexArray(cube_vao);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+  }
 
   // Draw the lamp object
   glUseProgram(shader_lamp);
