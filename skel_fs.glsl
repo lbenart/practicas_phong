@@ -37,7 +37,7 @@ vec3 CalcPointLight(Light lights, vec3 normal, vec3 frag_3Dpos, vec3 viewDir);
 void main() {
   vec3 normal = vs_normal;
   vec3 viewDir = normalize(view_pos - frag_3Dpos);
-  vec3 result;
+  vec3 result = vec3(0.0f, 0.0f, 0.0f);
   // point lights
   for(int i = 0; i < NR_POINT_LIGHTS; i++)
       result += CalcPointLight(lights[i], normal, frag_3Dpos, viewDir);
