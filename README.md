@@ -21,6 +21,9 @@ Contiene los archivos para dar respuesta a la cuarta parte de esta tarea: añadi
 
 En cada rama hay una carpeta que contiene capturas con los ejemplos de renders obtenidos para cada caso.
 
+## Bibliografía
+Para resolver las tareas se utilizaron como base los ejemplos y las notas brindadas en los apuntes de la asignatura, así como el curso Learn OpenGL disponible en el siguiente enlace: https://learnopengl.com/
+
 ## Compilación
 
 Cada rama contiene un archivo makefile apropiado, por tanto basta con ejecutar el comando:
